@@ -11,6 +11,8 @@ enum fonts { solid, regular, light, duotone, brands };
 
 enum icons {
     _500px                              = 0xf26e,
+    _line                               = 0xf3c0,
+    _union                              = 0xf6a2,
     abacus                              = 0xf640,
     accessible_icon                     = 0xf368,
     accusoft                            = 0xf369,
@@ -1236,7 +1238,6 @@ enum icons {
     lightbulb_on                        = 0xf672,
     lightbulb_slash                     = 0xf673,
     lights_holiday                      = 0xf7b2,
-    line                                = 0xf3c0,
     line_columns                        = 0xf870,
     line_height                         = 0xf871,
     link                                = 0xf0c1,
@@ -2124,7 +2125,6 @@ enum icons {
     undo                                = 0xf0e2,
     undo_alt                            = 0xf2ea,
     unicorn                             = 0xf727,
-    union                               = 0xf6a2,
     uniregistry                         = 0xf404,
     unity                               = 0xe049,
     universal_access                    = 0xf29a,
