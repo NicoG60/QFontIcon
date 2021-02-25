@@ -6,6 +6,12 @@ QFontIcon is a simple library that enables you to load one or several icon/glyph
 
 Inspired by [QtAwesome](https://github.com/gamecreature/QtAwesome).
 
+## Key features
+
+- Supports multiple fonts
+- Supports stateful icons (`QIcon::Mode` / `QIcon::State`)
+- Supports spinning animations
+
 ## CMake
 
 It's a cmake based project you can add as a subdirectory.
