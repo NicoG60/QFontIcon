@@ -12,6 +12,7 @@ enum fonts { solid, regular, light, duotone, brands };
 enum icons {
     _500px                              = 0xf26e,
     _line                               = 0xf3c0,
+    _linux                              = 0xf17c,
     _union                              = 0xf6a2,
     abacus                              = 0xf640,
     accessible_icon                     = 0xf368,
@@ -1244,7 +1245,6 @@ enum icons {
     linkedin                            = 0xf08c,
     linkedin_in                         = 0xf0e1,
     linode                              = 0xf2b8,
-    linux                               = 0xf17c,
     lips                                = 0xf600,
     lira_sign                           = 0xf195,
     list                                = 0xf03a,

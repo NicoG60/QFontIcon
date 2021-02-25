@@ -126,6 +126,7 @@ cpp_keywords = [
     'import',
     'module ',
     '_Pragma ',
+    'linux'
 ]
 
 def main():
