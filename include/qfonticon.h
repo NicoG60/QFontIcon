@@ -9,13 +9,13 @@ class QFontIconEnginePrivate;
 class QFontIconEngine : public QIconEngine
 {
 public:
-    enum { InvalidIcon = -1, DefaultFont = 0 };
+    enum { InvalidIcon = -1 };
 
 public:
     QFontIconEngine();
     QFontIconEngine(const QFontIconEngine& other);
 
-    QFontIconEngine(int icon, int font = DefaultFont);
+    QFontIconEngine(int icon, int font = defaultFont());
 
     ~QFontIconEngine() override;
 
@@ -52,8 +52,10 @@ public:
     void virtual_hook(int id, void* data) override;
 
 public:
-    static bool loadFont(const QString& filename, int font = DefaultFont);
-    static QIcon icon(int icon, int font = DefaultFont);
+    static bool loadFont(const QString& filename, int font = defaultFont());
+    static QIcon icon(int icon, int font = defaultFont());
+    static void setDefaultFont(int font);
+    static int defaultFont();
 
 protected:
     QScopedPointer<QFontIconEnginePrivate> d;

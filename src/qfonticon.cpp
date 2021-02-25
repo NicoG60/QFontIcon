@@ -84,6 +84,7 @@ public:
     StateMap<qreal> progress;
     StateMap<qreal> angles;
 
+    static int defaultFont;
     static QMap<int, QString> availableFonts;
     static QFont getFont(int font);
 };
@@ -158,6 +159,7 @@ QSize QFontIconEnginePrivate::actualSize(const QSize& size, QFont& font, qreal s
         return size;
 }
 
+int QFontIconEnginePrivate::defaultFont = 0;
 QMap<int, QString> QFontIconEnginePrivate::availableFonts;
 
 QFont QFontIconEnginePrivate::getFont(int font)
@@ -229,7 +231,7 @@ QString QFontIconEngine::text(QIcon::Mode mode, QIcon::State state) const
 
 int QFontIconEngine::font(QIcon::Mode mode, QIcon::State state) const
 {
-    return d->fonts.get(mode, state, DefaultFont);
+    return d->fonts.get(mode, state, defaultFont());
 }
 
 qreal QFontIconEngine::scaleFactor(QIcon::Mode mode, QIcon::State state) const
@@ -431,4 +433,14 @@ bool QFontIconEngine::loadFont(const QString& filename, int font)
 QIcon QFontIconEngine::icon(int icon, int font)
 {
     return QIcon(new QFontIconEngine(icon, font));
+}
+
+void QFontIconEngine::setDefaultFont(int font)
+{
+    QFontIconEnginePrivate::defaultFont = font;
+}
+
+int QFontIconEngine::defaultFont()
+{
+    return QFontIconEnginePrivate::defaultFont;
 }
