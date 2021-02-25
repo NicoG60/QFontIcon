@@ -5,8 +5,14 @@ import os
 
 def main():
 
-    # === Extract icons data directly from the source
-    json_file = requests.get("https://raw.githubusercontent.com/FortAwesome/Font-Awesome/master/metadata/icons.json").json()
+    json_file = {}
+
+    if len(sys.argv) == 2:
+        with open(sys.argv[1], 'r') as data:
+            json_file = json.load(data)
+    else:
+        # === Extract icons data directly from the source
+        json_file = requests.get("https://raw.githubusercontent.com/FortAwesome/Font-Awesome/master/metadata/icons.json").json()
 
     icons = []
     max_len = 0
@@ -37,8 +43,7 @@ def main():
         file.write(' * This file has been automatically generated.\n')
         file.write(' */\n\n')
         file.write('namespace fa {\n\n')
-        file.write('enum fonts { solid, regular, brands };\n\n')
-        file.write('enum pro_fonts { pro_solid, pro_regular, pro_light, pro_duo_tone, pro_brands };\n\n')
+        file.write('enum fonts { solid, regular, light, duotone, brands };\n\n')
         file.write('enum icons {\n')
         for name, code in icons:
             line = '    {name:<{len}} = {code},\n'.format(name=name, code=code, len=max_len)
