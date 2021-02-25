@@ -84,8 +84,15 @@ public:
     StateMap<qreal> progress;
     StateMap<qreal> angles;
 
+    struct FontInfo
+    {
+        int appId;
+        QString family;
+        QString style;
+    };
+
     static int defaultFont;
-    static QMap<int, QString> availableFonts;
+    static QMap<int, FontInfo> availableFonts;
     static QFont getFont(int font);
 };
 
@@ -160,13 +167,15 @@ QSize QFontIconEnginePrivate::actualSize(const QSize& size, QFont& font, qreal s
 }
 
 int QFontIconEnginePrivate::defaultFont = 0;
-QMap<int, QString> QFontIconEnginePrivate::availableFonts;
+QMap<int, QFontIconEnginePrivate::FontInfo> QFontIconEnginePrivate::availableFonts;
 
 QFont QFontIconEnginePrivate::getFont(int font)
 {
+    static QFontDatabase db;
+
     auto it = availableFonts.find(font);
     if(it != availableFonts.end())
-        return QFont(it.value(), 16);
+        return db.font(it.value().family, it.value().style, 16);
     else
         return{};
 }
@@ -401,6 +410,9 @@ void QFontIconEngine::virtual_hook(int id, void* data)
 
 bool QFontIconEngine::loadFont(const QString& filename, int font)
 {
+    static QFontDatabase db;
+    QFontIconEnginePrivate::FontInfo info;
+
     // Open it
     QFile fontFile(filename);
 
@@ -413,20 +425,36 @@ bool QFontIconEngine::loadFont(const QString& filename, int font)
     QByteArray fontData(fontFile.readAll());
 
     // Load it
-    int appId = QFontDatabase::addApplicationFontFromData(fontData);
+    info.appId = QFontDatabase::addApplicationFontFromData(fontData);
 
     // Retrieve it
-    auto families = QFontDatabase::applicationFontFamilies(appId);
+    auto families = QFontDatabase::applicationFontFamilies(info.appId);
     if(families.empty())
     {
         qWarning() << "QFontIcon: Font file is empty.";
         return false;
     }
 
-    auto fontName = families.first();
+    info.family = families.first();
+
+    auto styles = db.styles(info.family);
+
+    for(const auto& other : qAsConst(QFontIconEnginePrivate::availableFonts))
+    {
+        if(info.family == other.family)
+            styles.removeAll(other.style);
+    }
+
+    if(styles.empty())
+    {
+        qWarning() << "QFontIcon: Already registered.";
+        return false;
+    }
+
+    info.style = styles.first();
 
     // Save it
-    QFontIconEnginePrivate::availableFonts[font] = fontName;
+    QFontIconEnginePrivate::availableFonts[font] = info;
     return true;
 }
 
