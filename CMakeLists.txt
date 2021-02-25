@@ -18,7 +18,6 @@ find_package(Qt5 COMPONENTS Widgets REQUIRED)
 add_library(QFontIcon
   src/qfonticon.cpp
   include/qfonticon.h
-  include/QFontIcon
 )
 
 target_link_libraries(QFontIcon PUBLIC Qt5::Core Qt5::Gui Qt5::Widgets)

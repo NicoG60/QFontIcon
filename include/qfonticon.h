@@ -26,6 +26,7 @@ public:
     int icon(QIcon::Mode mode = QIcon::Normal, QIcon::State state = QIcon::Off) const;
     QString text(QIcon::Mode mode = QIcon::Normal, QIcon::State state = QIcon::Off) const;
     int font(QIcon::Mode mode = QIcon::Normal, QIcon::State state = QIcon::Off) const;
+    qreal scaleFactor(QIcon::Mode mode = QIcon::Normal, QIcon::State state = QIcon::Off) const;
     QColor color(QIcon::Mode mode = QIcon::Normal, QIcon::State state = QIcon::Off) const;
     qreal speed(QIcon::Mode mode = QIcon::Normal, QIcon::State state = QIcon::Off) const;
     QEasingCurve curve(QIcon::Mode mode = QIcon::Normal, QIcon::State state = QIcon::Off) const;
@@ -33,6 +34,7 @@ public:
 
     void setIcon(int icon, QIcon::Mode mode = QIcon::Normal, QIcon::State state = QIcon::Off);
     void setFont(int font, QIcon::Mode mode = QIcon::Normal, QIcon::State state = QIcon::Off);
+    void setScaleFactor(qreal scale, QIcon::Mode mode = QIcon::Normal, QIcon::State state = QIcon::Off);
     void setColor(const QColor& color, QIcon::Mode mode = QIcon::Normal, QIcon::State state = QIcon::Off);
     void setSpeed(qreal speed, QIcon::Mode mode = QIcon::Normal, QIcon::State state = QIcon::Off);
     void setCurve(const QEasingCurve& curve, QIcon::Mode mode = QIcon::Normal, QIcon::State state = QIcon::Off);

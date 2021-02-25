@@ -7,9 +7,7 @@
 
 namespace fa {
 
-enum fonts { solid, regular, brands };
-
-enum pro_fonts { pro_solid, pro_regular, pro_light, pro_duo_tone, pro_brands };
+enum fonts { solid, regular, light, duotone, brands };
 
 enum icons {
     _500px                              = 0xf26e,

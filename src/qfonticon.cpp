@@ -35,10 +35,10 @@ public:
             return it.value();
 
         if(k.second != QIcon::Off)
-            return get(k.first);
+            return get(k.first, QIcon::Off, defaultValue);
 
         if(k.first != QIcon::Normal)
-            return get();
+            return get(QIcon::Normal, QIcon::Off, defaultValue);
 
         return defaultValue;
     }
@@ -69,10 +69,11 @@ public:
     ~QFontIconEnginePrivate();
 
     void setupTimer();
-    QSize actualSize(const QSize& s, QFont f, const QString& t) const;
+    QSize actualSize(const QSize& size, QFont& font, qreal scale, const QString& text) const;
 
     StateMap<int> icons;
     StateMap<int> fonts;
+    StateMap<qreal> scales;
     StateMap<QColor> colors;
     StateMap<qreal> speeds;
     StateMap<QEasingCurve> curves;
@@ -137,14 +138,24 @@ void QFontIconEnginePrivate::setupTimer()
     timer->start();
 }
 
-QSize QFontIconEnginePrivate::actualSize(const QSize& s, QFont f, const QString& t) const
+QSize QFontIconEnginePrivate::actualSize(const QSize& size, QFont& font, qreal scale, const QString& text) const
 {
-    f.setPixelSize(s.height());
+    int drawSize = qRound(size.height()*scale);
+    font.setPixelSize(drawSize);
 
-    auto fm = QFontMetrics(f);
-    auto r = fm.boundingRect(t);
+    auto metrics = QFontMetrics(font);
+    auto rect = metrics.boundingRect(text);
 
-    return r.size().scaled(s, Qt::KeepAspectRatio);
+    auto rsize = rect.size();
+
+    if(rsize.width() > size.width() || rsize.height() > size.height())
+    {
+        rsize.scale(size, Qt::KeepAspectRatio);
+        font.setPixelSize(rsize.height());
+        return rsize;
+    }
+    else
+        return size;
 }
 
 QMap<int, QString> QFontIconEnginePrivate::availableFonts;
@@ -153,7 +164,7 @@ QFont QFontIconEnginePrivate::getFont(int font)
 {
     auto it = availableFonts.find(font);
     if(it != availableFonts.end())
-        return QFont(it.value());
+        return QFont(it.value(), 16);
     else
         return{};
 }
@@ -221,6 +232,11 @@ int QFontIconEngine::font(QIcon::Mode mode, QIcon::State state) const
     return d->fonts.get(mode, state, DefaultFont);
 }
 
+qreal QFontIconEngine::scaleFactor(QIcon::Mode mode, QIcon::State state) const
+{
+    return d->scales.get(mode, state, 0.9);
+}
+
 QColor QFontIconEngine::color(QIcon::Mode mode, QIcon::State state) const
 {
     auto c = d->colors.get(mode, state);
@@ -277,6 +293,11 @@ void QFontIconEngine::setFont(int font, QIcon::Mode mode, QIcon::State state)
     d->fonts.set(font, mode, state);
 }
 
+void QFontIconEngine::setScaleFactor(qreal scale, QIcon::Mode mode, QIcon::State state)
+{
+    d->scales.set(scale, mode, state);
+}
+
 void QFontIconEngine::setColor(const QColor& color, QIcon::Mode mode, QIcon::State state)
 {
     d->colors.set(color, mode, state);
@@ -315,8 +336,9 @@ QSize QFontIconEngine::actualSize(const QSize &size, QIcon::Mode mode, QIcon::St
     int id = font(mode, state);
     auto f = QFontIconEnginePrivate::getFont(id);
     auto t = text(mode, state);
+    auto s = scaleFactor(mode, state);
 
-    return d->actualSize(size, f, t);
+    return d->actualSize(size, f, s, t);
 }
 
 void QFontIconEngine::paint(QPainter* painter, const QRect& rect, QIcon::Mode mode, QIcon::State state)
@@ -329,18 +351,21 @@ void QFontIconEngine::paint(QPainter* painter, const QRect& rect, QIcon::Mode mo
 
     painter->save();
 
-    auto t = text(mode, state);
-    int id = font(mode, state);
-    auto f = QFontIconEnginePrivate::getFont(id);
-    auto c = color(mode, state);
-    auto s = d->actualSize(rect.size(), f, t);
+    auto rf = QRectF(rect); // Use floating for more precision
 
-    f.setPixelSize(s.height());
+    auto t  = text(mode, state);
+    int id  = font(mode, state);
+    auto f  = QFontIconEnginePrivate::getFont(id);
+    auto sf = scaleFactor(mode, state);
+    auto c  = color(mode, state);
+
+    d->actualSize(rect.size(), f, sf, t);
+
     auto a = d->angles.get(mode, state);
 
     if(a != 0)
     {
-        auto center = rect.center();
+        auto center = rf.center();
         painter->translate(center.x(), center.y());
         painter->rotate(a);
         painter->translate(-center.x(), -center.y());
@@ -348,7 +373,7 @@ void QFontIconEngine::paint(QPainter* painter, const QRect& rect, QIcon::Mode mo
 
     painter->setPen(c);
     painter->setFont(f);
-    painter->drawText(rect, text(mode, state), QTextOption( Qt::AlignCenter ));
+    painter->drawText(rf, text(mode, state), QTextOption( Qt::AlignCenter ));
 
     painter->restore();
 }
