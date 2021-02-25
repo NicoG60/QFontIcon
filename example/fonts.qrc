@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/">
+        <file>fonts/fa-solid-900.ttf</file>
+    </qresource>
+</RCC>
