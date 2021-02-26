@@ -191,6 +191,10 @@ def main():
         file.write(('#include <awesome.h>\n'
                     '#include <qfonticon.h>\n\n'
 
+                    '/**\n'
+                    ' * This file has been automatically generated.\n'
+                    ' */\n\n'
+
                     'namespace fa {\n\n'
 
                     'bool register_awesome_names()\n'

@@ -34,10 +34,10 @@ public:
         if(it != this->end())
             return it.value();
 
-        if(k.second != QIcon::Off)
-            return get(k.first, QIcon::Off, defaultValue);
-
         if(k.first != QIcon::Normal)
+            return get(QIcon::Normal, k.second, defaultValue);
+
+        if(k.second != QIcon::Off)
             return get(QIcon::Normal, QIcon::Off, defaultValue);
 
         return defaultValue;
@@ -190,12 +190,117 @@ QMap<QString, int> QFontIconEnginePrivate::fontNames;
 
 // =============================================================================
 
+/**
+ * @class QFontIconEngine
+ * @brief QIconEngine subclass to handle font glyphs as icons.
+ *
+ * QFontIconEngine can be used with any fonts. You presumably have embedded your
+ * favourite glyph font in a @c .qrc file. The first thing you need to do is
+ * loading you font using the loadFont() static function:
+ *
+ * @code
+ * QFontIconEngine::loadFont(":/path/to/my_font.ttf");
+ * @endcode
+ *
+ * Then you can use the icon() static helper function to easily create icons from
+ * the font you just loaded:
+ * @code
+ * QIcon icon = QFontIconEngine::icon(0xf82b) // This is the code point of the glyph
+ *
+ * // Alternatively, you can make an enumeration and / or register string base names
+ * enum glyph_code {
+ *     super_glyph = 0xf82b
+ * };
+ *
+ * QFontIconEngine::registerIconName("super-glyph", super_glyph);
+ *
+ * // And then use names instead:
+ * QIcon otherIcon = QFontIconEngine::icon("super-glyph");
+ * @endcode
+ *
+ * QFontIconEngine supports stateful icons. That means you can set different
+ * glyphs and various other properties on a per-state basis, depending on
+ * @c QIcon::Mode and @c QIcon::State . For example:
+ *
+ * @code
+ * // Assuming you have registered icon names
+ * // create the engine and then set properties
+ * auto engine = new QFontIconEngine();
+ * engine->setIcon("toggle-on",  QIcon::Normal, QIcon::On);
+ * engine->setIcon("toggle-off", QIcon::Normal, QIcon::Off);
+ *
+ * engine->setColor(Qt::green, QIcon::Normal, QIcon::On);
+ * engine->setColor(Qt::red,   QIcon::Normal, QIcon::Off);
+ *
+ * // Pass it to a QIcon. Note that QIcon takes the ownership of the engine so.
+ * // Therefore it's unsafe to reuse if afterward.
+ * QIcon icon(engine);
+ * @endcode
+ *
+ * The default state is { QIcon::Normal, QIcon::Off }  It is the
+ * one set by default when using helper fuctions. If you create and engine from
+ * scratch, this state must be set.
+ *
+ * If a value is not available in a given state { M, S } , it will
+ * first try to find a { QIcon::Normal, S } and if still not
+ * successful, will ultimately default to { QIcon::Normal, QIcon::Off }.
+ *
+ * Properties also include a spinning animation. (Yep)
+ * @code
+ * // Assuming you'll put it on a button
+ * auto btn = new QPushButton();
+ *
+ * auto engine = new QFontIconEngine();
+ * engine->setIcon("spinner");
+ *
+ * engine->setWidget(btn); // You need to tell the engine which widget to update
+ * engine->setSpeed(180); // speed is in degree per second. 180 <=> 1 turn in 2s
+ * engine->setCurve(QEasingCurve::InOutSine); // You can even set non-linear rotation.
+ *
+ * // Pass it to a QIcon and profits
+ * QIcon icon(engine);
+ * @endcode
+ *
+ * You can load multiple fonts and use them seamlessly.
+ * When loading a font you can specify a arbitrary font id and name which will
+ * help you differenciate the fonts.
+ * @code
+ * enum icon_set
+ * {
+ *     primary_font,
+ *     secondary_font
+ * };
+ *
+ * QFontIconEngine::loadFont(":/path/to/my_font.ttf", primary_font, "primary");
+ * QFontIconEngine::loadFont(":/path/to/my_font.ttf", secondary_font, "secondary");
+ * 
+ * // Set a default
+ * QFontIconEngine::setDefaultFont(primary_font);
+ *
+ * // Then you can pass either the font id of the font name depending on the
+ * // overload you use:
+ * QIcon icon = QFontIconEngine::icon("super-glyph", "secondary");
+ * 
+ * // This one will use the default font set earlier
+ * QIcon icon2 = QFontIconEngine::icon("super-glyph");
+ * @endcode
+ */
 
-
+/**
+ * Construct and engine with the defaultFont() set but no icon. It is therefore
+ * invalid.
+ *
+ * @see isValid()
+ */
 QFontIconEngine::QFontIconEngine() :
     d(new QFontIconEnginePrivate)
-{}
+{
+    setFont(defaultFont());
+}
 
+/**
+ * @brief Copy constructor.
+ */
 QFontIconEngine::QFontIconEngine(const QFontIconEngine& other) :
     d(new QFontIconEnginePrivate)
 {
@@ -212,6 +317,15 @@ QFontIconEngine::QFontIconEngine(const QFontIconEngine& other) :
     d->setupTimer();
 }
 
+/**
+ * @brief Construct and engine using @a icon and @a font.
+ *
+ * @a icon and @a font will set the { QIcon::Normal, QIcon::Off } state and
+ * therefore be used by default.
+ *
+ * @param icon the code point fo the icon to use
+ * @param font the font id to use
+ */
 QFontIconEngine::QFontIconEngine(int icon, int font) :
     QFontIconEngine()
 {
@@ -219,6 +333,14 @@ QFontIconEngine::QFontIconEngine(int icon, int font) :
     setFont(font);
 }
 
+/**
+ * @brief Construct and engine using @a icon and @a font.
+ *
+ * @overload
+ *
+ * @param icon the glyph name fo the icon to use
+ * @param font the font name to use
+ */
 QFontIconEngine::QFontIconEngine(const QString& icon, const QString& font) :
     QFontIconEngine()
 {
@@ -229,12 +351,21 @@ QFontIconEngine::QFontIconEngine(const QString& icon, const QString& font) :
         setFont(font);
 }
 
+/**
+ * @brief Whether the engine is valid.
+ * 
+ * Invalid engine results in null icon and wont draw.
+ * 
+ * An engine is considered valid if:
+ * - it has an default and valid icon (valid code point or name)
+ * - it has a default and valid font (loaded font and valid name)
+ */
 bool QFontIconEngine::isValid() const
 {
     if(d->icons.empty())
         return false;
 
-    if(d->fontNames.empty())
+    if(d->fonts.empty())
         return false;
 
     if(std::any_of(d->icons.begin(), d->icons.end(),
@@ -248,43 +379,67 @@ bool QFontIconEngine::isValid() const
     return true;
 }
 
+/**
+ * @brief Returns the icon code point set for the given state.
+ */
 int QFontIconEngine::icon(QIcon::Mode mode, QIcon::State state) const
 {
     return d->icons.get(mode, state, InvalidIcon);
 }
 
+/**
+ * @brief Returns the default icon name.
+ */
 QString QFontIconEngine::iconName() const
 {
     return iconName(QIcon::Normal, QIcon::Off);
 }
 
+/**
+ * @brief Returns the icon name set for the given state.
+ */
 QString QFontIconEngine::iconName(QIcon::Mode mode, QIcon::State state) const
 {
     int i = icon(mode, state);
     return QFontIconEnginePrivate::iconNames.key(i);
 }
 
+/**
+ * @brief Returns the icon code point as a text string for the given state.
+ */
 QString QFontIconEngine::text(QIcon::Mode mode, QIcon::State state) const
 {
     return { QChar(icon(mode, state)) };
 }
 
+/**
+ * @brief Returns the font id set for the given state.
+ */
 int QFontIconEngine::font(QIcon::Mode mode, QIcon::State state) const
 {
     return d->fonts.get(mode, state, defaultFont());
 }
 
+/**
+ * @brief Returns the font name set for the given state.
+ */
 QString QFontIconEngine::fontName(QIcon::Mode mode, QIcon::State state) const
 {
     int f = font(mode, state);
     return QFontIconEnginePrivate::fontNames.key(f);
 }
 
+/**
+ * @brief Returns the scale factor set for the given state.
+ */
 qreal QFontIconEngine::scaleFactor(QIcon::Mode mode, QIcon::State state) const
 {
     return d->scales.get(mode, state, 0.9);
 }
 
+/**
+ * @brief Returns the color set for the given state.
+ */
 QColor QFontIconEngine::color(QIcon::Mode mode, QIcon::State state) const
 {
     auto c = d->colors.get(mode, state);
@@ -316,26 +471,41 @@ QColor QFontIconEngine::color(QIcon::Mode mode, QIcon::State state) const
     return c;
 }
 
+/**
+ * @brief Returns the rotation speed set for the given state.
+ */
 qreal QFontIconEngine::speed(QIcon::Mode mode, QIcon::State state) const
 {
     return d->speeds.get(mode, state, 0);
 }
 
+/**
+ * @brief Returns the easing curve set for the given state.
+ */
 QEasingCurve QFontIconEngine::curve(QIcon::Mode mode, QIcon::State state) const
 {
     return d->curves.get(mode, state);
 }
 
+/**
+ * @brief Returns the widget the rotation animation displays on.
+ */
 QWidget* QFontIconEngine::widget() const
 {
     return d->widget;
 }
 
+/**
+ * @brief Set the icon code point for the given state.
+ */
 void QFontIconEngine::setIcon(int icon, QIcon::Mode mode, QIcon::State state)
 {
     d->icons.set(icon, mode, state);
 }
 
+/**
+ * @brief Set the icon name for the given state.
+ */
 void QFontIconEngine::setIcon(const QString& name, QIcon::Mode mode, QIcon::State state)
 {
     auto it = QFontIconEnginePrivate::iconNames.find(name);
@@ -348,11 +518,17 @@ void QFontIconEngine::setIcon(const QString& name, QIcon::Mode mode, QIcon::Stat
     setIcon(it.value(), mode, state);
 }
 
+/**
+ * @brief Set the font id for the given state.
+ */
 void QFontIconEngine::setFont(int font, QIcon::Mode mode, QIcon::State state)
 {
     d->fonts.set(font, mode, state);
 }
 
+/**
+ * @brief Set the font name for the given state.
+ */
 void QFontIconEngine::setFont(const QString& name, QIcon::Mode mode, QIcon::State state)
 {
     auto it = QFontIconEnginePrivate::fontNames.find(name);
@@ -365,27 +541,42 @@ void QFontIconEngine::setFont(const QString& name, QIcon::Mode mode, QIcon::Stat
     setFont(it.value(), mode, state);
 }
 
+/**
+ * @brief Set the scale factor for the given state.
+ */
 void QFontIconEngine::setScaleFactor(qreal scale, QIcon::Mode mode, QIcon::State state)
 {
     d->scales.set(scale, mode, state);
 }
 
+/**
+ * @brief Set the color for the given state.
+ */
 void QFontIconEngine::setColor(const QColor& color, QIcon::Mode mode, QIcon::State state)
 {
     d->colors.set(color, mode, state);
 }
 
+/**
+ * @brief Set the rotation speed for the given state.
+ */
 void QFontIconEngine::setSpeed(qreal speed, QIcon::Mode mode, QIcon::State state)
 {
     d->speeds.set(speed, mode, state);
     d->setupTimer();
 }
 
+/**
+ * @brief Set the easing curve point for the given state.
+ */
 void QFontIconEngine::setCurve(const QEasingCurve& curve, QIcon::Mode mode, QIcon::State state)
 {
     d->curves.set(curve, mode, state);
 }
 
+/**
+ * @brief Set the widget the rotation animation displays on.
+ */
 void QFontIconEngine::setWidget(QWidget* widget)
 {
     d->widget = widget;
@@ -469,6 +660,12 @@ void QFontIconEngine::virtual_hook(int id, void* data)
         QIconEngine::virtual_hook(id, data);
 }
 
+/**
+ * @brief load the font located at @a filename.
+ * 
+ * You can pass an arbitrary font id and font name if you're using multiple
+ * fonts.
+ */
 bool QFontIconEngine::loadFont(const QString& filename, int font, const QString& name)
 {
     static QFontDatabase db;
@@ -523,26 +720,43 @@ bool QFontIconEngine::loadFont(const QString& filename, int font, const QString&
     return true;
 }
 
+/**
+ * @brief Convenience function that returns an icon.
+ */
 QIcon QFontIconEngine::icon(int icon, int font)
 {
     return QIcon(new QFontIconEngine(icon, font));
 }
 
+/**
+ * @brief Convenience function that returns an icon.
+ */
 QIcon QFontIconEngine::icon(const QString& icon, const QString& font)
 {
     return QIcon(new QFontIconEngine(icon, font));
 }
 
+/**
+ * @brief Set the default font to use.
+ * 
+ * Before calling this function, the default font is set to 0.
+ */
 void QFontIconEngine::setDefaultFont(int font)
 {
     QFontIconEnginePrivate::defaultFont = font;
 }
 
+/**
+ * @brief Returns the currently set default font.
+ */
 int QFontIconEngine::defaultFont()
 {
     return QFontIconEnginePrivate::defaultFont;
 }
 
+/**
+ * @brief Register a name for the given code point
+ */
 bool QFontIconEngine::registerIconName(QString name, int code)
 {
     name = name.trimmed();
@@ -556,6 +770,9 @@ bool QFontIconEngine::registerIconName(QString name, int code)
     return true;
 }
 
+/**
+ * @brief Register all the names / code points provided
+ */
 bool QFontIconEngine::registerIconName(const QMap<QString, int>& names)
 {
     bool r = true;
@@ -564,6 +781,9 @@ bool QFontIconEngine::registerIconName(const QMap<QString, int>& names)
     return r;
 }
 
+/**
+ * @brief Register a font name for the given font id
+ */
 bool QFontIconEngine::registerFontName(QString name, int font)
 {
     name = name.trimmed();
@@ -577,6 +797,9 @@ bool QFontIconEngine::registerFontName(QString name, int font)
     return true;
 }
 
+/**
+ * @brief Register all the names / font ids provided
+ */
 bool QFontIconEngine::registerFontName(const QMap<QString, int>& names)
 {
     bool r = true;

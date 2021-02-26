@@ -2,7 +2,7 @@
 
 ## Description
 
-QFontIcon is a simple library that enables you to load one or several icon/glyph fonts and use them.
+QFontIcon is a simple library that allows you to load one or several icon/glyph fonts and use them.
 
 Inspired by [QtAwesome](https://github.com/gamecreature/QtAwesome).
 
@@ -17,6 +17,8 @@ Inspired by [QtAwesome](https://github.com/gamecreature/QtAwesome).
 It's a cmake based project you can add as a subdirectory.
 
 ## Usage
+
+[Full Documentation](doc/reference.md)
 
 Here is a simple example using Font Awesome.
 > Note: The library provides convenient enumerations for Font Awesome under the `fa` namespace.
@@ -37,6 +39,9 @@ int main(int argc, char*[] argv)
     QFontIconEngine::loadFont("path/to/fa-solid-900.ttf",   fa::solid);
     QFontIconEngine::loadFont("path/to/fa-regular-400.ttf", fa::regular);
     QFontIconEngine::loadFont("path/to/fa-brands-400.ttf",  fa::brands);
+
+    // if you want to use string based names
+    fa::register_awesome_names();
 
     // Create the icon you want
     auto beer = QFontIconEngine::icon(fa::beer, fa::solid);

@@ -1,6 +1,10 @@
 #include <awesome.h>
 #include <qfonticon.h>
 
+/**
+ * This file has been automatically generated.
+ */
+
 namespace fa {
 
 bool register_awesome_names()

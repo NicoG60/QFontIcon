@@ -48,6 +48,7 @@ int main(int argc, char *argv[])
         auto engine = new QFontIconEngine(fa::beer);
         engine->setSpeed(180);
         engine->setWidget(beerButton);
+        engine->setCurve(QEasingCurve::InOutCubic);
 
         beerButton->setIcon( QIcon(engine) );
 
