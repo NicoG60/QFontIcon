@@ -21,7 +21,7 @@ public:
 
 public:
     StateMap() : QMap<Key, T>() {}
-    StateMap(StateMap<T> &&other) : QMap<Key, T>(other) {}
+    StateMap(StateMap<T> &&other) noexcept : QMap<Key, T>(other) {}
     StateMap(const StateMap<T> &other) : QMap<Key, T>(other) {}
     StateMap(std::initializer_list<std::pair<Key, T>> list)  : QMap<Key, T>(list) {}
     StateMap<T>& operator=(StateMap<T> &&other) noexcept {  QMap<Key, T>::operator=(other); return *this; }
@@ -86,7 +86,7 @@ public:
 
     struct FontInfo
     {
-        int appId;
+        int appId = -1;
         QString family;
         QString style;
     };
@@ -94,6 +94,9 @@ public:
     static int defaultFont;
     static QMap<int, FontInfo> availableFonts;
     static QFont getFont(int font);
+
+    static QMap<QString, int> iconNames;
+    static QMap<QString, int> fontNames;
 };
 
 QFontIconEnginePrivate::QFontIconEnginePrivate() {}
@@ -180,6 +183,9 @@ QFont QFontIconEnginePrivate::getFont(int font)
         return{};
 }
 
+QMap<QString, int> QFontIconEnginePrivate::iconNames;
+QMap<QString, int> QFontIconEnginePrivate::fontNames;
+
 
 
 // =============================================================================
@@ -213,10 +219,24 @@ QFontIconEngine::QFontIconEngine(int icon, int font) :
     setFont(font);
 }
 
-QFontIconEngine::~QFontIconEngine() {}
+QFontIconEngine::QFontIconEngine(const QString& icon, const QString& font) :
+    QFontIconEngine()
+{
+    setIcon(icon);
+    if(font.isEmpty())
+        setFont(defaultFont());
+    else
+        setFont(font);
+}
 
 bool QFontIconEngine::isValid() const
 {
+    if(d->icons.empty())
+        return false;
+
+    if(d->fontNames.empty())
+        return false;
+
     if(std::any_of(d->icons.begin(), d->icons.end(),
                    [](int i){ return i == InvalidIcon; }))
         return false;
@@ -233,6 +253,17 @@ int QFontIconEngine::icon(QIcon::Mode mode, QIcon::State state) const
     return d->icons.get(mode, state, InvalidIcon);
 }
 
+QString QFontIconEngine::iconName() const
+{
+    return iconName(QIcon::Normal, QIcon::Off);
+}
+
+QString QFontIconEngine::iconName(QIcon::Mode mode, QIcon::State state) const
+{
+    int i = icon(mode, state);
+    return QFontIconEnginePrivate::iconNames.key(i);
+}
+
 QString QFontIconEngine::text(QIcon::Mode mode, QIcon::State state) const
 {
     return { QChar(icon(mode, state)) };
@@ -241,6 +272,12 @@ QString QFontIconEngine::text(QIcon::Mode mode, QIcon::State state) const
 int QFontIconEngine::font(QIcon::Mode mode, QIcon::State state) const
 {
     return d->fonts.get(mode, state, defaultFont());
+}
+
+QString QFontIconEngine::fontName(QIcon::Mode mode, QIcon::State state) const
+{
+    int f = font(mode, state);
+    return QFontIconEnginePrivate::fontNames.key(f);
 }
 
 qreal QFontIconEngine::scaleFactor(QIcon::Mode mode, QIcon::State state) const
@@ -299,9 +336,33 @@ void QFontIconEngine::setIcon(int icon, QIcon::Mode mode, QIcon::State state)
     d->icons.set(icon, mode, state);
 }
 
+void QFontIconEngine::setIcon(const QString& name, QIcon::Mode mode, QIcon::State state)
+{
+    auto it = QFontIconEnginePrivate::iconNames.find(name);
+    if(it == QFontIconEnginePrivate::iconNames.end())
+    {
+        qWarning() << "QFontIcon: Invalid icon name";
+        return;
+    }
+
+    setIcon(it.value(), mode, state);
+}
+
 void QFontIconEngine::setFont(int font, QIcon::Mode mode, QIcon::State state)
 {
     d->fonts.set(font, mode, state);
+}
+
+void QFontIconEngine::setFont(const QString& name, QIcon::Mode mode, QIcon::State state)
+{
+    auto it = QFontIconEnginePrivate::fontNames.find(name);
+    if(it == QFontIconEnginePrivate::fontNames.end())
+    {
+        qWarning() << "QFontIcon: Invalid font name";
+        return;
+    }
+
+    setFont(it.value(), mode, state);
 }
 
 void QFontIconEngine::setScaleFactor(qreal scale, QIcon::Mode mode, QIcon::State state)
@@ -408,7 +469,7 @@ void QFontIconEngine::virtual_hook(int id, void* data)
         QIconEngine::virtual_hook(id, data);
 }
 
-bool QFontIconEngine::loadFont(const QString& filename, int font)
+bool QFontIconEngine::loadFont(const QString& filename, int font, const QString& name)
 {
     static QFontDatabase db;
     QFontIconEnginePrivate::FontInfo info;
@@ -455,10 +516,19 @@ bool QFontIconEngine::loadFont(const QString& filename, int font)
 
     // Save it
     QFontIconEnginePrivate::availableFonts[font] = info;
+
+    if(!name.isEmpty())
+        registerFontName(name, font);
+
     return true;
 }
 
 QIcon QFontIconEngine::icon(int icon, int font)
+{
+    return QIcon(new QFontIconEngine(icon, font));
+}
+
+QIcon QFontIconEngine::icon(const QString& icon, const QString& font)
 {
     return QIcon(new QFontIconEngine(icon, font));
 }
@@ -471,4 +541,46 @@ void QFontIconEngine::setDefaultFont(int font)
 int QFontIconEngine::defaultFont()
 {
     return QFontIconEnginePrivate::defaultFont;
+}
+
+bool QFontIconEngine::registerIconName(QString name, int code)
+{
+    name = name.trimmed();
+    if(name.isEmpty())
+    {
+        qWarning() << "QFontIcon: Invalid icon name";
+        return false;
+    }
+
+    QFontIconEnginePrivate::iconNames[name] = code;
+    return true;
+}
+
+bool QFontIconEngine::registerIconName(const QMap<QString, int>& names)
+{
+    bool r = true;
+    for(auto it = names.begin(); it != names.end(); ++it)
+        r &= registerIconName(it.key(), it.value());
+    return r;
+}
+
+bool QFontIconEngine::registerFontName(QString name, int font)
+{
+    name = name.trimmed();
+    if(name.isEmpty())
+    {
+        qWarning() << "QFontIcon: Invalid font name";
+        return false;
+    }
+
+    QFontIconEnginePrivate::fontNames[name] = font;
+    return true;
+}
+
+bool QFontIconEngine::registerFontName(const QMap<QString, int>& names)
+{
+    bool r = true;
+    for(auto it = names.begin(); it != names.end(); ++it)
+        r &= registerFontName(it.key(), it.value());
+    return r;
 }

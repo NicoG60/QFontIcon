@@ -158,25 +158,66 @@ def main():
         code = '0x{}'.format(value["unicode"])
 
         # save
-        icons.append((name, code))
+        icons.append((key, name, code))
 
     icons.sort(key=lambda e: e[0])
 
     with open('awesome.h', 'w') as file:
-        file.write('#ifndef AWESOME_H\n')
-        file.write('#define AWESOME_H\n\n')
-        file.write('/**\n')
-        file.write(' * This file has been automatically generated.\n')
-        file.write(' */\n\n')
-        file.write('namespace fa {\n\n')
-        file.write('enum fonts { solid, regular, light, duotone, brands };\n\n')
-        file.write('enum icons {\n')
-        for name, code in icons:
+        file.write(('#ifndef AWESOME_H\n'
+                    '#define AWESOME_H\n\n'
+
+                    '/**\n'
+                    ' * This file has been automatically generated.\n'
+                    ' */\n\n'
+
+                    'namespace fa {\n\n'
+
+                    'enum fonts { solid, regular, light, duotone, brands };\n\n'
+
+                    'enum icons {\n'))
+
+        for key, name, code in icons:
             line = '    {name:<{len}} = {code},\n'.format(name=name, code=code, len=max_len)
             file.write(line)
-        file.write('};\n')
-        file.write('}\n\n')
-        file.write('#endif // AWESOME_H\n')
+
+        file.write(('};\n\n'
+
+                    'bool register_awesome_names();\n'
+                    '}\n\n'
+
+                    '#endif // AWESOME_H\n'))
+
+    with open('awesome.cpp', 'w') as file:
+        file.write(('#include <awesome.h>\n'
+                    '#include <qfonticon.h>\n\n'
+
+                    'namespace fa {\n\n'
+
+                    'bool register_awesome_names()\n'
+                    '{\n'
+                    '    bool r = true;\n\n'
+
+                    '    r &= QFontIconEngine::registerFontName({\n'
+                    '        { QStringLiteral("solid"),   solid   },\n'
+                    '        { QStringLiteral("regular"), regular },\n'
+                    '        { QStringLiteral("light"),   light   },\n'
+                    '        { QStringLiteral("duotone"), duotone },\n'
+                    '        { QStringLiteral("brands"),  brands  }\n'
+                    '    });\n\n'
+
+                    '    r &= QFontIconEngine::registerIconName({\n'))
+
+        for key, name, code in icons:
+            string = 'QStringLiteral("{}")'.format(key)
+            pair   = '{string:<{len1}}, {name:<{len2}}'.format(string=string, name=name, len1=max_len+18, len2=max_len)
+            line   = '        { ' + pair + ' },\n'
+            file.write(line)
+
+        file.write(('    });\n\n'
+
+                    '    return r;'
+                    '}\n'
+                    '}\n'))
         
 if __name__ == '__main__':
     main()

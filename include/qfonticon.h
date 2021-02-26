@@ -16,16 +16,20 @@ public:
     QFontIconEngine(const QFontIconEngine& other);
 
     QFontIconEngine(int icon, int font = defaultFont());
+    QFontIconEngine(const QString& icon, const QString& font = {});
 
-    ~QFontIconEngine() override;
+    ~QFontIconEngine() override = default;
 
     // ======
 
     bool isValid() const;
 
     int icon(QIcon::Mode mode = QIcon::Normal, QIcon::State state = QIcon::Off) const;
+    QString iconName() const override;
+    QString iconName(QIcon::Mode mode, QIcon::State state) const;
     QString text(QIcon::Mode mode = QIcon::Normal, QIcon::State state = QIcon::Off) const;
     int font(QIcon::Mode mode = QIcon::Normal, QIcon::State state = QIcon::Off) const;
+    QString fontName(QIcon::Mode mode = QIcon::Normal, QIcon::State state = QIcon::Off) const;
     qreal scaleFactor(QIcon::Mode mode = QIcon::Normal, QIcon::State state = QIcon::Off) const;
     QColor color(QIcon::Mode mode = QIcon::Normal, QIcon::State state = QIcon::Off) const;
     qreal speed(QIcon::Mode mode = QIcon::Normal, QIcon::State state = QIcon::Off) const;
@@ -33,7 +37,9 @@ public:
     QWidget* widget() const;
 
     void setIcon(int icon, QIcon::Mode mode = QIcon::Normal, QIcon::State state = QIcon::Off);
+    void setIcon(const QString& name, QIcon::Mode mode = QIcon::Normal, QIcon::State state = QIcon::Off);
     void setFont(int font, QIcon::Mode mode = QIcon::Normal, QIcon::State state = QIcon::Off);
+    void setFont(const QString& name, QIcon::Mode mode = QIcon::Normal, QIcon::State state = QIcon::Off);
     void setScaleFactor(qreal scale, QIcon::Mode mode = QIcon::Normal, QIcon::State state = QIcon::Off);
     void setColor(const QColor& color, QIcon::Mode mode = QIcon::Normal, QIcon::State state = QIcon::Off);
     void setSpeed(qreal speed, QIcon::Mode mode = QIcon::Normal, QIcon::State state = QIcon::Off);
@@ -52,10 +58,17 @@ public:
     void virtual_hook(int id, void* data) override;
 
 public:
-    static bool loadFont(const QString& filename, int font = defaultFont());
+    static bool loadFont(const QString& filename, int font = defaultFont(), const QString& name = {});
     static QIcon icon(int icon, int font = defaultFont());
+    static QIcon icon(const QString& icon, const QString& font = {});
     static void setDefaultFont(int font);
     static int defaultFont();
+
+    static bool registerIconName(QString name, int code);
+    static bool registerIconName(const QMap<QString, int>& names);
+
+    static bool registerFontName(QString name, int font);
+    static bool registerFontName(const QMap<QString, int>& names);
 
 protected:
     QScopedPointer<QFontIconEnginePrivate> d;

@@ -11,9 +11,6 @@ enum fonts { solid, regular, light, duotone, brands };
 
 enum icons {
     _500px                              = 0xf26e,
-    _line                               = 0xf3c0,
-    _linux                              = 0xf17c,
-    _union                              = 0xf6a2,
     abacus                              = 0xf640,
     accessible_icon                     = 0xf368,
     accusoft                            = 0xf369,
@@ -986,11 +983,11 @@ enum icons {
     guitar_electric                     = 0xf8be,
     guitars                             = 0xf8bf,
     gulp                                = 0xf3ae,
+    h_square                            = 0xf0fd,
     h1                                  = 0xf313,
     h2                                  = 0xf314,
     h3                                  = 0xf315,
     h4                                  = 0xf86a,
-    h_square                            = 0xf0fd,
     hacker_news                         = 0xf1d4,
     hacker_news_square                  = 0xf3af,
     hackerrank                          = 0xf5f7,
@@ -1239,12 +1236,14 @@ enum icons {
     lightbulb_on                        = 0xf672,
     lightbulb_slash                     = 0xf673,
     lights_holiday                      = 0xf7b2,
+    _line                               = 0xf3c0,
     line_columns                        = 0xf870,
     line_height                         = 0xf871,
     link                                = 0xf0c1,
     linkedin                            = 0xf08c,
     linkedin_in                         = 0xf0e1,
     linode                              = 0xf2b8,
+    _linux                              = 0xf17c,
     lips                                = 0xf600,
     lira_sign                           = 0xf195,
     list                                = 0xf03a,
@@ -1427,8 +1426,8 @@ enum icons {
     outlet                              = 0xe01c,
     oven                                = 0xe01d,
     overline                            = 0xf876,
-    page4                               = 0xf3d7,
     page_break                          = 0xf877,
+    page4                               = 0xf3d7,
     pagelines                           = 0xf18c,
     pager                               = 0xf815,
     paint_brush                         = 0xf1fc,
@@ -2125,6 +2124,7 @@ enum icons {
     undo                                = 0xf0e2,
     undo_alt                            = 0xf2ea,
     unicorn                             = 0xf727,
+    _union                              = 0xf6a2,
     uniregistry                         = 0xf404,
     unity                               = 0xe049,
     universal_access                    = 0xf29a,
@@ -2321,6 +2321,8 @@ enum icons {
     youtube_square                      = 0xf431,
     zhihu                               = 0xf63f,
 };
+
+bool register_awesome_names();
 }
 
 #endif // AWESOME_H
