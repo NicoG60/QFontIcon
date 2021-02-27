@@ -18,8 +18,11 @@ find_package(Qt5 COMPONENTS Widgets REQUIRED)
 add_library(QFontIcon
   src/qfonticon.cpp
   src/awesome.cpp
+  src/bootstrap.cpp
+
   include/qfonticon.h
   include/awesome.h
+  include/bootstrap.h
 )
 
 target_link_libraries(QFontIcon PUBLIC Qt5::Core Qt5::Gui Qt5::Widgets)

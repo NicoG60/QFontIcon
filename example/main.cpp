@@ -45,7 +45,7 @@ int main(int argc, char *argv[])
     {
         QPushButton* beerButton = new QPushButton( "Cheers!");
 
-        auto engine = new QFontIconEngine(fa::beer);
+        auto engine = new QFontIconEngine(fa::icons::beer);
         engine->setSpeed(180);
         engine->setWidget(beerButton);
         engine->setCurve(QEasingCurve::InOutCubic);
@@ -62,10 +62,10 @@ int main(int argc, char *argv[])
         toggleButton->setCheckable(true);
 
         auto engine = new QFontIconEngine();
-        engine->setIcon(fa::toggle_on, QIcon::Normal, QIcon::On);
+        engine->setIcon(fa::icons::toggle_on, QIcon::Normal, QIcon::On);
         engine->setColor(Qt::green, QIcon::Normal, QIcon::On);
 
-        engine->setIcon(fa::toggle_off, QIcon::Normal, QIcon::Off);
+        engine->setIcon(fa::icons::toggle_off, QIcon::Normal, QIcon::Off);
         engine->setColor(Qt::red, QIcon::Normal, QIcon::Off);
 
         toggleButton->setIcon( QIcon(engine) );
