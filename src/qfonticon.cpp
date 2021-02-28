@@ -86,9 +86,10 @@ public:
 
     struct FontInfo
     {
-        int appId = -1;
+        int     appId = -1;
         QString family;
         QString style;
+        QFont   font;
     };
 
     static int defaultFont;
@@ -174,11 +175,9 @@ QMap<int, QFontIconEnginePrivate::FontInfo> QFontIconEnginePrivate::availableFon
 
 QFont QFontIconEnginePrivate::getFont(int font)
 {
-    static QFontDatabase db;
-
     auto it = availableFonts.find(font);
     if(it != availableFonts.end())
-        return db.font(it.value().family, it.value().style, 16);
+        return it->font;
     else
         return{};
 }
@@ -710,6 +709,7 @@ bool QFontIconEngine::loadFont(const QString& filename, int font, const QString&
     }
 
     info.style = styles.first();
+    info.font = db.font(info.family, info.style, 16);
 
     // Save it
     QFontIconEnginePrivate::availableFonts[font] = info;
