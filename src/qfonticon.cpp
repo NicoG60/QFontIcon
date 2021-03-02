@@ -661,6 +661,8 @@ void QFontIconEngine::paint(QPainter* painter, const QRect& rect, QIcon::Mode mo
     {
         painter->save();
 
+        painter->setRenderHint(QPainter::Antialiasing);
+
         painter->setPen(Qt::NoPen);
         painter->setBrush(QColor(255, 0, 0, 200));
 
