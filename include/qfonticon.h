@@ -35,6 +35,7 @@ public:
     qreal speed(QIcon::Mode mode = QIcon::Normal, QIcon::State state = QIcon::Off) const;
     QEasingCurve curve(QIcon::Mode mode = QIcon::Normal, QIcon::State state = QIcon::Off) const;
     QWidget* widget() const;
+    bool badgeEnabled() const;
 
     void setIcon(int icon, QIcon::Mode mode = QIcon::Normal, QIcon::State state = QIcon::Off);
     void setIcon(const QString& name, QIcon::Mode mode = QIcon::Normal, QIcon::State state = QIcon::Off);
@@ -45,6 +46,7 @@ public:
     void setSpeed(qreal speed, QIcon::Mode mode = QIcon::Normal, QIcon::State state = QIcon::Off);
     void setCurve(const QEasingCurve& curve, QIcon::Mode mode = QIcon::Normal, QIcon::State state = QIcon::Off);
     void setWidget(QWidget* widget);
+    void setBadgeEnabled(bool en);
 
     // ======
 

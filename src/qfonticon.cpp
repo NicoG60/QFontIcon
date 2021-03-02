@@ -80,6 +80,8 @@ public:
 
     QWidget* widget = nullptr;
 
+    bool badge = false;
+
     QScopedPointer<QTimer> timer;
     StateMap<qreal> progress;
     StateMap<qreal> angles;
@@ -272,14 +274,14 @@ QMap<QString, int> QFontIconEnginePrivate::fontNames;
  *
  * QFontIconEngine::loadFont(":/path/to/my_font.ttf", primary_font, "primary");
  * QFontIconEngine::loadFont(":/path/to/my_font.ttf", secondary_font, "secondary");
- * 
+ *
  * // Set a default
  * QFontIconEngine::setDefaultFont(primary_font);
  *
  * // Then you can pass either the font id of the font name depending on the
  * // overload you use:
  * QIcon icon = QFontIconEngine::icon("super-glyph", "secondary");
- * 
+ *
  * // This one will use the default font set earlier
  * QIcon icon2 = QFontIconEngine::icon("super-glyph");
  * @endcode
@@ -352,9 +354,9 @@ QFontIconEngine::QFontIconEngine(const QString& icon, const QString& font) :
 
 /**
  * @brief Whether the engine is valid.
- * 
+ *
  * Invalid engine results in null icon and wont draw.
- * 
+ *
  * An engine is considered valid if:
  * - it has an default and valid icon (valid code point or name)
  * - it has a default and valid font (loaded font and valid name)
@@ -495,6 +497,14 @@ QWidget* QFontIconEngine::widget() const
 }
 
 /**
+ * @brief Returns whether to display a red badge on the icon
+ */
+bool QFontIconEngine::badgeEnabled() const
+{
+    return d->badge;
+}
+
+/**
  * @brief Set the icon code point for the given state.
  */
 void QFontIconEngine::setIcon(int icon, QIcon::Mode mode, QIcon::State state)
@@ -582,6 +592,14 @@ void QFontIconEngine::setWidget(QWidget* widget)
     d->setupTimer();
 }
 
+/**
+ * @brief Set if the red badge should be enabled
+ */
+void QFontIconEngine::setBadgeEnabled(bool en)
+{
+    d->badge = en;
+}
+
 QFontIconEngine* QFontIconEngine::QFontIconEngine::clone() const
 {
     return new QFontIconEngine(*this);
@@ -638,6 +656,25 @@ void QFontIconEngine::paint(QPainter* painter, const QRect& rect, QIcon::Mode mo
     painter->drawText(rf, text(mode, state), QTextOption( Qt::AlignCenter ));
 
     painter->restore();
+
+    if(d->badge)
+    {
+        painter->save();
+
+        painter->setPen(Qt::NoPen);
+        painter->setBrush(QColor(255, 0, 0, 200));
+
+        auto s = rf.size() / 3.0;
+
+        if(s.width() < 10 || s.height() < 10)
+            s = rf.size() / 2.0;
+
+        QRectF badgeRect(rf.right()-s.width(), rf.top(), s.width(), s.height());
+
+        painter->drawEllipse(badgeRect);
+
+        painter->restore();
+    }
 }
 
 QPixmap QFontIconEngine::pixmap(const QSize& size, QIcon::Mode mode, QIcon::State state)
@@ -661,7 +698,7 @@ void QFontIconEngine::virtual_hook(int id, void* data)
 
 /**
  * @brief load the font located at @a filename.
- * 
+ *
  * You can pass an arbitrary font id and font name if you're using multiple
  * fonts.
  */
@@ -738,7 +775,7 @@ QIcon QFontIconEngine::icon(const QString& icon, const QString& font)
 
 /**
  * @brief Set the default font to use.
- * 
+ *
  * Before calling this function, the default font is set to 0.
  */
 void QFontIconEngine::setDefaultFont(int font)
