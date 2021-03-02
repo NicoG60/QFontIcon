@@ -668,7 +668,7 @@ void QFontIconEngine::paint(QPainter* painter, const QRect& rect, QIcon::Mode mo
 
         auto s = rf.size() / 3.0;
 
-        if(s.width() < 10 || s.height() < 10)
+        if(s.width() < 8 || s.height() < 8)
             s = rf.size() / 2.0;
 
         QRectF badgeRect(rf.right()-s.width(), rf.top(), s.width(), s.height());
