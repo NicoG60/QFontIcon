@@ -18,7 +18,7 @@ public:
     QFontIconEngine(int icon, int font = defaultFont());
     QFontIconEngine(const QString& icon, const QString& font = {});
 
-    ~QFontIconEngine() override = default;
+    ~QFontIconEngine() override;
 
     // ======
 

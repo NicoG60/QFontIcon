@@ -352,6 +352,8 @@ QFontIconEngine::QFontIconEngine(const QString& icon, const QString& font) :
         setFont(font);
 }
 
+QFontIconEngine::~QFontIconEngine() {}
+
 /**
  * @brief Whether the engine is valid.
  *
