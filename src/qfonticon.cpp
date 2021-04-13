@@ -1,7 +1,7 @@
 #include <qfonticon.h>
 
 #include <QMap>
-#include <QFont>
+#include <QRawFont>
 #include <QIconEngine>
 #include <QTimer>
 #include <QFontMetrics>
@@ -11,6 +11,7 @@
 #include <QPalette>
 #include <QWidget>
 #include <QFontDatabase>
+#include <QPainterPath>
 #include <QFile>
 
 template<class T>
@@ -69,7 +70,7 @@ public:
     ~QFontIconEnginePrivate();
 
     void setupTimer();
-    QSizeF actualSize(const QSizeF& size, QFont& font, qreal scale, const QString& text) const;
+    QSizeF actualSize(const QSizeF& size, QRawFont& font, qreal scale, quint32 glyphIndex) const;
 
     StateMap<int> icons;
     StateMap<int> fonts;
@@ -95,8 +96,8 @@ public:
     };
 
     static int defaultFont;
-    static QMap<int, FontInfo> availableFonts;
-    static QFont getFont(int font);
+    static QMap<int, QRawFont> availableFonts;
+    static QRawFont& getFont(int font);
 
     static QMap<QString, int> iconNames;
     static QMap<QString, int> fontNames;
@@ -152,20 +153,20 @@ void QFontIconEnginePrivate::setupTimer()
     timer->start();
 }
 
-QSizeF QFontIconEnginePrivate::actualSize(const QSizeF& size, QFont& font, qreal scale, const QString& text) const
+QSizeF QFontIconEnginePrivate::actualSize(const QSizeF& size, QRawFont& font, qreal scale, quint32 glyphIndex) const
 {
     qreal drawSize = size.height()*scale;
-    font.setPointSizeF(drawSize);
+    font.setPixelSize(drawSize);
 
-    auto metrics = QFontMetricsF(font);
-    auto rect = metrics.boundingRect(text);
+    auto rect = font.boundingRect(glyphIndex);
+    auto glyph = font.pathForGlyph(glyphIndex);
 
     auto rsize = rect.size();
 
     if(rsize.width() > size.width() || rsize.height() > size.height())
     {
         rsize.scale(size, Qt::KeepAspectRatio);
-        font.setPointSizeF(rsize.height());
+        font.setPixelSize(rsize.height());
         return rsize;
     }
     else
@@ -173,15 +174,12 @@ QSizeF QFontIconEnginePrivate::actualSize(const QSizeF& size, QFont& font, qreal
 }
 
 int QFontIconEnginePrivate::defaultFont = 0;
-QMap<int, QFontIconEnginePrivate::FontInfo> QFontIconEnginePrivate::availableFonts;
+QMap<int, QRawFont> QFontIconEnginePrivate::availableFonts;
 
-QFont QFontIconEnginePrivate::getFont(int font)
+QRawFont& QFontIconEnginePrivate::getFont(int font)
 {
-    auto it = availableFonts.find(font);
-    if(it != availableFonts.end())
-        return it->font;
-    else
-        return{};
+    Q_ASSERT(availableFonts.contains(font));
+    return availableFonts[font];
 }
 
 QMap<QString, int> QFontIconEnginePrivate::iconNames;
@@ -416,6 +414,17 @@ QString QFontIconEngine::text(QIcon::Mode mode, QIcon::State state) const
 }
 
 /**
+ * @brief Returns the icon glyph index in the font. (which is different from the codepoint)
+ */
+quint32 QFontIconEngine::glyphIndex(QIcon::Mode mode, QIcon::State state) const
+{
+    auto& f = QFontIconEnginePrivate::getFont(font(mode, state));
+    auto v = f.glyphIndexesForString(text(mode, state));
+    Q_ASSERT(v.count() == 1);
+    return v.first();
+}
+
+/**
  * @brief Returns the font id set for the given state.
  */
 int QFontIconEngine::font(QIcon::Mode mode, QIcon::State state) const
@@ -617,10 +626,10 @@ QSize QFontIconEngine::actualSize(const QSize &size, QIcon::Mode mode, QIcon::St
 
     int id = font(mode, state);
     auto f = QFontIconEnginePrivate::getFont(id);
-    auto t = text(mode, state);
+    auto g = glyphIndex(mode, state);
     auto s = scaleFactor(mode, state);
 
-    return d->actualSize(size, f, s, t).toSize();
+    return d->actualSize(size, f, s, g).toSize();
 }
 
 void QFontIconEngine::paint(QPainter* painter, const QRect& rect, QIcon::Mode mode, QIcon::State state)
@@ -633,29 +642,35 @@ void QFontIconEngine::paint(QPainter* painter, const QRect& rect, QIcon::Mode mo
 
     painter->save();
 
-    auto rf = QRectF(rect); // Use floating for more precision
+    painter->setRenderHint(QPainter::Antialiasing);
 
-    auto t  = text(mode, state);
+    auto r  = QRectF(rect); // Use floating for more precision
+    auto s  = r.size();
+    auto g  = glyphIndex(mode, state);
     int id  = font(mode, state);
     auto f  = QFontIconEnginePrivate::getFont(id);
     auto sf = scaleFactor(mode, state);
     auto c  = color(mode, state);
 
-    d->actualSize(rf.size(), f, sf, t);
+    d->actualSize(s, f, sf, g);
 
     auto a = d->angles.get(mode, state);
 
     if(a != 0)
     {
-        auto center = rf.center();
+        auto center = r.center();
         painter->translate(center.x(), center.y());
         painter->rotate(a);
         painter->translate(-center.x(), -center.y());
     }
 
-    painter->setPen(c);
-    painter->setFont(f);
-    painter->drawText(rf, text(mode, state), QTextOption( Qt::AlignCenter ));
+    auto bounds = f.boundingRect(g);
+    auto glyph = f.pathForGlyph(g);
+
+    painter->translate(r.center() - bounds.center());
+    painter->setPen(Qt::NoPen);
+    painter->setBrush(c);
+    painter->drawPath(glyph);
 
     painter->restore();
 
@@ -663,17 +678,15 @@ void QFontIconEngine::paint(QPainter* painter, const QRect& rect, QIcon::Mode mo
     {
         painter->save();
 
-        painter->setRenderHint(QPainter::Antialiasing);
-
         painter->setPen(Qt::NoPen);
         painter->setBrush(QColor(255, 0, 0, 200));
 
-        auto s = rf.size() / 3.0;
+        auto bs = r.size() / 3.0;
 
-        if(s.width() < 8 || s.height() < 8)
-            s = rf.size() / 2.0;
+        if(bs.width() < 8 || bs.height() < 8)
+            bs = r.size() / 2.0;
 
-        QRectF badgeRect(rf.right()-s.width(), rf.top(), s.width(), s.height());
+        QRectF badgeRect(r.right()-bs.width(), r.top(), bs.width(), bs.height());
 
         painter->drawEllipse(badgeRect);
 
@@ -708,52 +721,10 @@ void QFontIconEngine::virtual_hook(int id, void* data)
  */
 bool QFontIconEngine::loadFont(const QString& filename, int font, const QString& name)
 {
-    static QFontDatabase db;
-    QFontIconEnginePrivate::FontInfo info;
-
     // Open it
-    QFile fontFile(filename);
+    QRawFont rawFont(filename, 32);
 
-    if(!fontFile.open(QIODevice::ReadOnly))
-    {
-        qWarning() << "QFontIcon: Unable to open font file.";
-        return false;
-    }
-
-    QByteArray fontData(fontFile.readAll());
-
-    // Load it
-    info.appId = QFontDatabase::addApplicationFontFromData(fontData);
-
-    // Retrieve it
-    auto families = QFontDatabase::applicationFontFamilies(info.appId);
-    if(families.empty())
-    {
-        qWarning() << "QFontIcon: Font file is empty.";
-        return false;
-    }
-
-    info.family = families.first();
-
-    auto styles = db.styles(info.family);
-
-    for(const auto& other : qAsConst(QFontIconEnginePrivate::availableFonts))
-    {
-        if(info.family == other.family)
-            styles.removeAll(other.style);
-    }
-
-    if(styles.empty())
-    {
-        qWarning() << "QFontIcon: Already registered.";
-        return false;
-    }
-
-    info.style = styles.first();
-    info.font = db.font(info.family, info.style, 16);
-
-    // Save it
-    QFontIconEnginePrivate::availableFonts[font] = info;
+    QFontIconEnginePrivate::availableFonts[font] = rawFont;
 
     if(!name.isEmpty())
         registerFontName(name, font);

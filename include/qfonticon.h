@@ -28,6 +28,7 @@ public:
     QString iconName() const override;
     QString iconName(QIcon::Mode mode, QIcon::State state) const;
     QString text(QIcon::Mode mode = QIcon::Normal, QIcon::State state = QIcon::Off) const;
+    quint32 glyphIndex(QIcon::Mode mode = QIcon::Normal, QIcon::State state = QIcon::Off) const;
     int font(QIcon::Mode mode = QIcon::Normal, QIcon::State state = QIcon::Off) const;
     QString fontName(QIcon::Mode mode = QIcon::Normal, QIcon::State state = QIcon::Off) const;
     qreal scaleFactor(QIcon::Mode mode = QIcon::Normal, QIcon::State state = QIcon::Off) const;
