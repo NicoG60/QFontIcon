@@ -159,7 +159,6 @@ QSizeF QFontIconEnginePrivate::actualSize(const QSizeF& size, QRawFont& font, qr
     font.setPixelSize(drawSize);
 
     auto rect = font.boundingRect(glyphIndex);
-    auto glyph = font.pathForGlyph(glyphIndex);
 
     auto rsize = rect.size();
 
