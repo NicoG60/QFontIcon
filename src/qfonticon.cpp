@@ -69,7 +69,7 @@ public:
     ~QFontIconEnginePrivate();
 
     void setupTimer();
-    QSize actualSize(const QSize& size, QFont& font, qreal scale, const QString& text) const;
+    QSizeF actualSize(const QSizeF& size, QFont& font, qreal scale, const QString& text) const;
 
     StateMap<int> icons;
     StateMap<int> fonts;
@@ -152,12 +152,12 @@ void QFontIconEnginePrivate::setupTimer()
     timer->start();
 }
 
-QSize QFontIconEnginePrivate::actualSize(const QSize& size, QFont& font, qreal scale, const QString& text) const
+QSizeF QFontIconEnginePrivate::actualSize(const QSizeF& size, QFont& font, qreal scale, const QString& text) const
 {
-    int drawSize = qRound(size.height()*scale);
-    font.setPixelSize(drawSize);
+    qreal drawSize = size.height()*scale;
+    font.setPointSizeF(drawSize);
 
-    auto metrics = QFontMetrics(font);
+    auto metrics = QFontMetricsF(font);
     auto rect = metrics.boundingRect(text);
 
     auto rsize = rect.size();
@@ -165,7 +165,7 @@ QSize QFontIconEnginePrivate::actualSize(const QSize& size, QFont& font, qreal s
     if(rsize.width() > size.width() || rsize.height() > size.height())
     {
         rsize.scale(size, Qt::KeepAspectRatio);
-        font.setPixelSize(rsize.height());
+        font.setPointSizeF(rsize.height());
         return rsize;
     }
     else
@@ -620,7 +620,7 @@ QSize QFontIconEngine::actualSize(const QSize &size, QIcon::Mode mode, QIcon::St
     auto t = text(mode, state);
     auto s = scaleFactor(mode, state);
 
-    return d->actualSize(size, f, s, t);
+    return d->actualSize(size, f, s, t).toSize();
 }
 
 void QFontIconEngine::paint(QPainter* painter, const QRect& rect, QIcon::Mode mode, QIcon::State state)
@@ -641,7 +641,7 @@ void QFontIconEngine::paint(QPainter* painter, const QRect& rect, QIcon::Mode mo
     auto sf = scaleFactor(mode, state);
     auto c  = color(mode, state);
 
-    d->actualSize(rect.size(), f, sf, t);
+    d->actualSize(rf.size(), f, sf, t);
 
     auto a = d->angles.get(mode, state);
 
