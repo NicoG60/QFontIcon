@@ -70,7 +70,7 @@ public:
     ~QFontIconEnginePrivate();
 
     void setupTimer();
-    QSizeF actualSize(const QSizeF& size, QRawFont& font, qreal scale, quint32 glyphIndex) const;
+    QSizeF resizeFont(const QSizeF& size, QRawFont& font, qreal scale, quint32 glyphIndex) const;
 
     StateMap<int> icons;
     StateMap<int> fonts;
@@ -153,9 +153,9 @@ void QFontIconEnginePrivate::setupTimer()
     timer->start();
 }
 
-QSizeF QFontIconEnginePrivate::actualSize(const QSizeF& size, QRawFont& font, qreal scale, quint32 glyphIndex) const
+QSizeF QFontIconEnginePrivate::resizeFont(const QSizeF& size, QRawFont& font, qreal scale, quint32 glyphIndex) const
 {
-    qreal drawSize = size.height()*scale;
+    qreal drawSize = qMax(size.width(), size.height())*scale;
     font.setPixelSize(drawSize);
 
     auto rect = font.boundingRect(glyphIndex);
@@ -164,9 +164,10 @@ QSizeF QFontIconEnginePrivate::actualSize(const QSizeF& size, QRawFont& font, qr
 
     if(rsize.width() > size.width() || rsize.height() > size.height())
     {
-        rsize.scale(size, Qt::KeepAspectRatio);
-        font.setPixelSize(rsize.height());
-        return rsize;
+        auto nsize = rsize.scaled(size, Qt::KeepAspectRatio);
+        qreal ratio = nsize.height() / rsize.height();
+        font.setPixelSize(drawSize * ratio);
+        return nsize;
     }
     else
         return size;
@@ -617,18 +618,16 @@ QFontIconEngine* QFontIconEngine::QFontIconEngine::clone() const
 
 QSize QFontIconEngine::actualSize(const QSize &size, QIcon::Mode mode, QIcon::State state)
 {
+    Q_UNUSED(mode);
+    Q_UNUSED(state);
+
     if(!isValid())
     {
         qWarning() << "QFontIconEngine: Invalid object";
         return {};
     }
 
-    int id = font(mode, state);
-    auto f = QFontIconEnginePrivate::getFont(id);
-    auto g = glyphIndex(mode, state);
-    auto s = scaleFactor(mode, state);
-
-    return d->actualSize(size, f, s, g).toSize();
+    return size;
 }
 
 void QFontIconEngine::paint(QPainter* painter, const QRect& rect, QIcon::Mode mode, QIcon::State state)
@@ -651,7 +650,7 @@ void QFontIconEngine::paint(QPainter* painter, const QRect& rect, QIcon::Mode mo
     auto sf = scaleFactor(mode, state);
     auto c  = color(mode, state);
 
-    d->actualSize(s, f, sf, g);
+    d->resizeFont(s, f, sf, g);
 
     auto a = d->angles.get(mode, state);
 
