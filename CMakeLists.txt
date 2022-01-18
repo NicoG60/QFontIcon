@@ -11,9 +11,12 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 option(QFONTICON_BUILD_EXAMPLE "Build the nice example" OFF)
 
-find_package(Qt5 COMPONENTS Core REQUIRED)
-find_package(Qt5 COMPONENTS Gui REQUIRED)
-find_package(Qt5 COMPONENTS Widgets REQUIRED)
+find_package(QT NAMES Qt6 Qt5 COMPONENTS Core REQUIRED)
+set(QT Qt${QT_VERSION_MAJOR})
+
+find_package(${QT} COMPONENTS Core REQUIRED)
+find_package(${QT} COMPONENTS Gui REQUIRED)
+find_package(${QT} COMPONENTS Widgets REQUIRED)
 
 add_library(QFontIcon
   src/qfonticon.cpp
@@ -22,7 +25,7 @@ add_library(QFontIcon
   include/awesome.h
 )
 
-target_link_libraries(QFontIcon PUBLIC Qt5::Core Qt5::Gui Qt5::Widgets)
+target_link_libraries(QFontIcon PUBLIC ${QT}::Core ${QT}::Gui ${QT}::Widgets)
 target_include_directories(QFontIcon PUBLIC include)
 
 if(QFONTICON_BUILD_EXAMPLE)
