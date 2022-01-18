@@ -25,7 +25,7 @@ public:
     bool isValid() const;
 
     int icon(QIcon::Mode mode = QIcon::Normal, QIcon::State state = QIcon::Off) const;
-    QString iconName() const override;
+    QString iconName() override;
     QString iconName(QIcon::Mode mode, QIcon::State state) const;
     QString text(QIcon::Mode mode = QIcon::Normal, QIcon::State state = QIcon::Off) const;
     quint32 glyphIndex(QIcon::Mode mode = QIcon::Normal, QIcon::State state = QIcon::Off) const;

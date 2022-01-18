@@ -391,7 +391,7 @@ int QFontIconEngine::icon(QIcon::Mode mode, QIcon::State state) const
 /**
  * @brief Returns the default icon name.
  */
-QString QFontIconEngine::iconName() const
+QString QFontIconEngine::iconName()
 {
     return iconName(QIcon::Normal, QIcon::Off);
 }
