@@ -138,7 +138,7 @@ def main():
             json_file = json.load(data)
     else:
         # === Extract icons data directly from the source
-        json_file = requests.get("https://raw.githubusercontent.com/FortAwesome/Font-Awesome/master/metadata/icons.json").json()
+        json_file = requests.get("https://raw.githubusercontent.com/FortAwesome/Font-Awesome/6.x/metadata/icons.json").json()
 
     icons = []
     max_len = 0
