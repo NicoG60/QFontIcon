@@ -391,7 +391,7 @@ int QFontIconEngine::icon(QIcon::Mode mode, QIcon::State state) const
 /**
  * @brief Returns the default icon name.
  */
-QString QFontIconEngine::iconName()
+QString QFontIconEngine::iconName() QFI6_CONST
 {
     return iconName(QIcon::Normal, QIcon::Off);
 }
@@ -694,13 +694,18 @@ void QFontIconEngine::paint(QPainter* painter, const QRect& rect, QIcon::Mode mo
 
 QPixmap QFontIconEngine::pixmap(const QSize& size, QIcon::Mode mode, QIcon::State state)
 {
-    QPixmap pm(size);
-    pm.fill( Qt::transparent ); // we need transparency
+    if(size.isValid() && !size.isEmpty())
     {
-        QPainter p(&pm);
-        paint(&p, QRect(QPoint(0,0),size), mode, state);
+        QPixmap pm(size);
+        pm.fill( Qt::transparent ); // we need transparency
+        {
+            QPainter p(&pm);
+            paint(&p, QRect(QPoint(0,0),size), mode, state);
+        }
+        return pm;
     }
-    return pm;
+    else
+        return {};
 }
 
 void QFontIconEngine::virtual_hook(int id, void* data)

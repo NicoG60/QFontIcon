@@ -5,6 +5,12 @@
 #include <QVariant>
 #include <QEasingCurve>
 
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+#define QFI6_CONST const
+#else
+#define QFI6_CONST
+#endif
+
 class QFontIconEnginePrivate;
 class QFontIconEngine : public QIconEngine
 {
@@ -25,7 +31,7 @@ public:
     bool isValid() const;
 
     int icon(QIcon::Mode mode = QIcon::Normal, QIcon::State state = QIcon::Off) const;
-    QString iconName() override;
+    QString iconName() QFI6_CONST override;
     QString iconName(QIcon::Mode mode, QIcon::State state) const;
     QString text(QIcon::Mode mode = QIcon::Normal, QIcon::State state = QIcon::Off) const;
     quint32 glyphIndex(QIcon::Mode mode = QIcon::Normal, QIcon::State state = QIcon::Off) const;
